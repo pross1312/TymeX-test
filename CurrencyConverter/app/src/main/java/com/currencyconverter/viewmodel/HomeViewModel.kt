@@ -1,8 +1,20 @@
 package com.currencyconverter.viewmodel
 
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 
+data class CurrencyExchange(
+    val amount: String,
+    val currency: Int,
+)
+
 class HomeViewModel(): ViewModel() {
+    val from: MutableLiveData<CurrencyExchange> by lazy {
+        MutableLiveData<CurrencyExchange>(CurrencyExchange(amount = "0", currency = 0))
+    }
+    val to: MutableLiveData<CurrencyExchange> by lazy {
+        MutableLiveData<CurrencyExchange>(CurrencyExchange(amount = "0", currency = 0))
+    }
 
     fun convertForward(from: String): String {
         if (from.isBlank()) return "";
