@@ -2,4 +2,8 @@
 <resources>
     <color name="black">#FF000000</color>
     <color name="white">#FFFFFFFF</color>
+    <color name="textColor">@color/black</color>
+    <color name="borderColor">@color/black</color>
+    <color name="backgroundColor">@color/white</color>
+    <color name="seperationLineColor">@color/black</color>
 </resources>
