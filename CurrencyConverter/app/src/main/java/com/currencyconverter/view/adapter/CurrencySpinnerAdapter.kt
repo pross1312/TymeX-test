@@ -5,10 +5,10 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.BaseAdapter
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.LiveData
 import com.currencyconverter.databinding.SpinnerTextBinding
 
-class CurrencySpinnerAdapter(lifecycleOwner: LifecycleOwner, private val data: MutableLiveData<Array<Map.Entry<String, String>>>): BaseAdapter() {
+class CurrencySpinnerAdapter(lifecycleOwner: LifecycleOwner, private val data: LiveData<Array<Map.Entry<String, String>>>): BaseAdapter() {
 
     init {
         data.observe(lifecycleOwner) { data ->

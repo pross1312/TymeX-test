@@ -6,6 +6,7 @@
     android:layout_width="match_parent"
     android:paddingVertical="5dp"
     android:paddingHorizontal="5dp"
+    android:maxWidth="200dp"
     android:ellipsize="marquee"
     android:layout_height="match_parent"
     style="?android:attr/spinnerItemStyle"

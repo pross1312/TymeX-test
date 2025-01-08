@@ -11,7 +11,6 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
-import java.net.URL
 
 data class OpenExchangeLatestResult(
     val disclaimer: String,
@@ -49,48 +48,54 @@ class OpenExchangeApi(val apiKey: String) {
             .build()
 
     fun fetchCurrenciesNames(
-        onFailure: (call: Call, e: IOException) -> Unit,
+        onFailure: (call: Call?, e: Exception) -> Unit,
         onSuccess: (call: Call, result: Map<String, String>) -> Unit
     ) {
         val jsonAdapter = moshi.adapter<Map<String, String>>(Types.newParameterizedType(Map::class.java, String::class.java, String::class.java));
         val request = Request.Builder()
             .url(url("/api/currencies.json"))
             .build()
-        client.newCall(request).enqueue(object: Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                onFailure(call, e);
-            }
+        try {
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    onFailure(call, e);
+                }
 
-            override fun onResponse(call: Call, response: Response) {
-                val body = response.body!!.string();
-                Log.i("OpenExchangeApi", body);
-                val result = jsonAdapter.fromJson(body)!!;
-                Log.i("OpenExchangeApi", result.toString());
-                onSuccess(call, result);
-            }
-        });
+                override fun onResponse(call: Call, response: Response) {
+                    val body = response.body!!.string();
+                    val result = jsonAdapter.fromJson(body)!!;
+                    onSuccess(call, result);
+                }
+            });
+        } catch (ex: Exception) {
+            onFailure(null, ex);
+        }
     }
 
     fun fetchLatest(
-        onFailure: (call: Call, e: IOException) -> Unit,
+        onFailure: (call: Call?, e: Exception) -> Unit,
         onSuccess: (call: Call, result: OpenExchangeLatestResult) -> Unit
     ) {
         val jsonAdapter = moshi.adapter(OpenExchangeLatestResult::class.java);
         val request = Request.Builder()
             .url(url("/api/latest.json"))
             .build();
-        client.newCall(request).enqueue(object: Callback {
-            override fun onFailure(call: Call, e: IOException) {
-                onFailure(call, e);
-            }
+        try {
+            client.newCall(request).enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    onFailure(call, e);
+                }
 
-            override fun onResponse(call: Call, response: Response) {
-                val body = response.body!!.string();
-                Log.i("OpenExchangeApi", body);
-                val result = jsonAdapter.fromJson(body)!!;
-                Log.i("OpenExchangeApi", result.toString());
-                onSuccess(call, result);
-            }
-        });
+                override fun onResponse(call: Call, response: Response) {
+                    val body = response.body!!.string();
+                    Log.i("OpenExchangeApi", body);
+                    val result = jsonAdapter.fromJson(body)!!;
+                    Log.i("OpenExchangeApi", result.toString());
+                    onSuccess(call, result);
+                }
+            });
+        } catch (ex: Exception) {
+            onFailure(null, ex);
+        }
     }
 }
