@@ -1,13 +1,17 @@
 package com.currencyconverter.view
 
 import android.net.ConnectivityManager
-import android.net.Network
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
+import android.view.View.INVISIBLE
 import android.view.View.OnFocusChangeListener
-import android.widget.Toast
+import android.view.View.VISIBLE
 import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
+import com.currencyconverter.R
 import com.currencyconverter.data.api.OpenExchangeApi
 import com.currencyconverter.data.cache.CurrencyConverterCache
 import com.currencyconverter.databinding.ActivityHomeBinding
@@ -18,9 +22,12 @@ import java.io.File
 
 class HomeView: AppCompatActivity() {
     private lateinit var binding: ActivityHomeBinding;
+    private val TAG = "CurrencyConverter:HomeView"
     private val api by lazy { OpenExchangeApi("902e8d27de3f412f96039e606b769039") }
     private val cacheRepo by lazy { CurrencyConverterCache(File(cacheDir, "currencyConverter")) }
     private val viewModel: HomeViewModel by viewModels { HomeViewModel.Factory(api, cacheRepo) };
+    private val handler: Handler = Handler(Looper.myLooper()!!);
+    private val fetchFrequency: Long = 5000;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -29,14 +36,30 @@ class HomeView: AppCompatActivity() {
         binding.viewModel = viewModel;
         binding.spinnerFrom.adapter = adapter;
         binding.spinnerTo.adapter = adapter;
+        binding.themeButton.setOnClickListener {
+            if (resources.getString(R.string.mode) == "light") {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+            } else {
+                AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            }
+        }
         binding.lifecycleOwner = this;
         bindObserver();
-        registerNetworkCallback();
         setContentView(binding.root);
     }
 
+    override fun onResume() {
+        super.onResume()
+        registerNetworkCallback();
+    }
+
+    override fun onPause() {
+        unregisterNetworkCallback();
+        super.onPause()
+    }
+
     override fun onStop() {
-        Log.i("CurrencyConverter:HomePage", "OnStop " + viewModel.saveToCache().toString());
+        Log.i(TAG, "OnStop " + viewModel.saveToCache().toString());
         super.onStop()
     }
 
@@ -44,6 +67,17 @@ class HomeView: AppCompatActivity() {
         try {
             val connectivityManager = this.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
             connectivityManager.registerDefaultNetworkCallback(viewModel.networkCallback);
+            Log.i(TAG, "Register network callback");
+        } catch (e: Exception) {
+            throw e;
+        }
+    }
+
+    private fun unregisterNetworkCallback() {
+        try {
+            Log.i(TAG, "unregister");
+            val connectivityManager = this.getSystemService(CONNECTIVITY_SERVICE) as ConnectivityManager
+            connectivityManager.unregisterNetworkCallback(viewModel.networkCallback);
         } catch (e: Exception) {
             throw e;
         }
@@ -81,6 +115,30 @@ class HomeView: AppCompatActivity() {
         }
         viewModel.toCurrency.observe(this) { _ ->
             viewModel.toUpdated(viewModel.toText.value ?: "");
+        }
+        viewModel.error.observe(this) { error ->
+            if (error == null) {
+                binding.error.text = resources.getString(R.string.connected);
+                binding.error.backgroundTintList = resources.getColorStateList(R.color.noLongerErrorBackground, null);
+                handler.postDelayed({
+                    if (viewModel.error.value == null) binding.error.visibility = INVISIBLE;
+                }, 1000);
+            } else {
+                binding.error.text = when (error) {
+                    HomeViewModel.Error.NO_INTERNET -> resources.getString(R.string.no_internet_error)
+                    HomeViewModel.Error.FETCH_DATA -> resources.getString(R.string.no_internet_error)
+                    else -> throw Exception("Unhandled error")
+                }
+                binding.error.backgroundTintList = resources.getColorStateList(R.color.errorBackground, null);
+                binding.error.visibility = VISIBLE;
+            }
+        }
+        viewModel.isLoading.observe(this) { isLoading ->
+            if (isLoading) {
+                binding.refresh.setBackgroundResource(R.drawable.loading);
+            } else {
+                binding.refresh.setBackgroundResource(R.drawable.refresh);
+            }
         }
     }
 }

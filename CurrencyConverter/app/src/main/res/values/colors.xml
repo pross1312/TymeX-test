@@ -6,4 +6,8 @@
     <color name="borderColor">@color/black</color>
     <color name="backgroundColor">@color/white</color>
     <color name="seperationLineColor">@color/black</color>
+    <color name="lastUpdateTimeColor">@color/black</color>
+    <color name="errorText">#FFFFFFFF</color>
+    <color name="errorBackground">#FFFF0000</color>
+    <color name="noLongerErrorBackground">#FF00FF00</color>
 </resources>

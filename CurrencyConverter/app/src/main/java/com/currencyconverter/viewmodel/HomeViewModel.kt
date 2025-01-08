@@ -2,55 +2,86 @@ package com.currencyconverter.viewmodel
 
 import android.net.ConnectivityManager.NetworkCallback
 import android.net.Network
+import android.os.Looper
 import android.util.Log
+import android.view.View
+import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.map
 import com.currencyconverter.data.api.OpenExchangeApi
 import com.currencyconverter.data.cache.CurrencyConverterCache
 import com.currencyconverter.data.cache.CurrencyConverterCacheData
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
 
 class HomeViewModel(private val api: OpenExchangeApi, private val cacheRepo: CurrencyConverterCache): ViewModel() {
+    enum class Error { NO_INTERNET, FETCH_DATA }
+
+    private val TAG = "CurrencyConverter:HomeViewModel";
+    private val fetchInterval: Long = 1000 * 10;
+
     val fromText: MutableLiveData<String> = MutableLiveData(null);
     val toText: MutableLiveData<String> = MutableLiveData(null);
-    var timestamp: MutableLiveData<Int> = MutableLiveData(null);
+    var timestamp: MutableLiveData<Long> = MutableLiveData(null);
+    val handler = android.os.Handler(Looper.myLooper()!!);
+    val isLoading = MutableLiveData<Boolean>(false);
+    val timestampString: LiveData<String> = timestamp.map {
+        if (it == null) return@map "";
+        Log.i(TAG, it.toString());
+        return@map DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss").withZone(ZoneId.systemDefault()).format(Instant.ofEpochSecond(it));
+    }
 
     val fromCurrency: MutableLiveData<Int> = MutableLiveData(null);
     val toCurrency: MutableLiveData<Int> = MutableLiveData(null);
-    val error: MutableLiveData<String?> = MutableLiveData(null);
+    val error: MutableLiveData<Error?> = MutableLiveData(null);
 
     val allCurrencies: MutableLiveData<Array<Map.Entry<String, String>>> by lazy { MutableLiveData() };
     var rates: Map<String, Double>? = null;
-    val networkCallback get() = object: NetworkCallback() {
+    val networkCallback = object: NetworkCallback() {
         override fun onAvailable(network: Network) {
             super.onAvailable(network)
-            Log.i("CurrencyConverter:HomeViewModel", "Network available");
+            Log.i(TAG, "Network available");
             if (!isDataAvailable()) fetchLatest();
             error.postValue(null);
+            handler.postDelayed(object: Runnable {
+                override fun run() {
+                    Log.i(TAG, "CHECK MODEL");
+                    fetchLatest()
+                    handler.postDelayed(this, fetchInterval);
+                }
+            }, fetchInterval);
         }
         override fun onUnavailable() {
             super.onUnavailable()
-            Log.i("CurrencyConverter:HomeViewModel", "Network unavailable");
-            error.postValue("No internet, exchange rates won't get updated");
+            Log.i(TAG, "Network unavailable");
+            error.postValue(Error.NO_INTERNET);
         }
 
         override fun onLost(network: Network) {
             super.onLost(network)
-            Log.i("CurrencyConverter:HomeViewModel", "Network lost");
-            error.postValue("No internet, exchange rates won't get updated");
+            Log.i(TAG, "Network lost");
+            handler.removeCallbacksAndMessages(null);
+            error.postValue(Error.NO_INTERNET);
         }
     }
 
     init {
         if (!loadFromCache()) {
             fetchLatest();
-            Log.i("CurrencyConverter:HomeViewModel", "Load latest from OpenExchange");
+            Log.i(TAG, "Load latest from OpenExchange");
         } else {
-            Log.i("CurrencyConverter:HomeViewModel", "Load data from cache");
+            Log.i(TAG, "Load data from cache");
         }
     }
 
     fun isDataAvailable() = this.rates != null && this.allCurrencies.value != null && this.fromCurrency.value != null && this.toCurrency.value != null && this.timestamp.value != null
+
+    fun refreshClick(view: View) {
+        fetchLatest();
+    }
 
     fun saveToCache(): Boolean {
         if (isDataAvailable()) {
@@ -87,17 +118,25 @@ class HomeViewModel(private val api: OpenExchangeApi, private val cacheRepo: Cur
         fromText.value = convertBackward(to);
     }
 
-    private fun fetchLatest() {
+    fun fetchLatest() {
+        Log.i(TAG, "Fetch Data");
+        if (isLoading.value == true) return;
+        isLoading.value = true;
+
+        // NOTE: this can be done in parallel but just do it this way so it takes more time
         api.fetchLatest({_, e ->
-            Log.e("CurrencyConverter:HomeViewModel", e.toString());
+            Log.e(TAG, e.toString());
+            error.postValue(Error.FETCH_DATA);
         }, {_, result ->
             rates = result.rates;
-            timestamp.postValue(result.timestamp);
-        });
-        api.fetchCurrenciesNames({_, e ->
-            Log.e("CurrencyConverter:HomeViewModel", e.toString());
-        }, {_, result ->
-            allCurrencies.postValue(result.entries.toTypedArray());
+            timestamp.postValue(Instant.now().epochSecond);
+            api.fetchCurrenciesNames({_, e ->
+                Log.e(TAG, e.toString());
+                error.postValue(Error.FETCH_DATA);
+            }, {_, res ->
+                isLoading.postValue(false);
+                allCurrencies.postValue(res.entries.toTypedArray());
+            });
         });
     }
 

@@ -15,7 +15,7 @@ import java.io.IOException
 data class OpenExchangeLatestResult(
     val disclaimer: String,
     val license: String,
-    val timestamp: Int,
+    val timestamp: Long,
     val base: String,
     val rates: Map<String, Double>
 )
@@ -88,9 +88,7 @@ class OpenExchangeApi(val apiKey: String) {
 
                 override fun onResponse(call: Call, response: Response) {
                     val body = response.body!!.string();
-                    Log.i("OpenExchangeApi", body);
                     val result = jsonAdapter.fromJson(body)!!;
-                    Log.i("OpenExchangeApi", result.toString());
                     onSuccess(call, result);
                 }
             });

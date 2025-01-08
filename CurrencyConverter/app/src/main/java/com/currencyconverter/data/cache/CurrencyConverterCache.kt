@@ -15,7 +15,7 @@ import java.util.AbstractMap.SimpleEntry
 data class CurrencyConverterCacheData(
     val rates: Map<String, Double>,
     val names: Array<Map.Entry<String, String>>,
-    val timestamp: Int,
+    val timestamp: Long,
     val fromCurrency: Int,
     val toCurrency: Int
 )
