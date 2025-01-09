@@ -1,6 +1,6 @@
 package com.currencyconverter.data.api
 
-import android.util.Log
+import com.currencyconverter.jsonadapter.BigDecimalJsonAdapter
 import com.squareup.moshi.Moshi
 import com.squareup.moshi.Types
 import com.squareup.moshi.kotlin.reflect.KotlinJsonAdapterFactory
@@ -11,13 +11,14 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
+import java.math.BigDecimal
 
 data class OpenExchangeLatestResult(
     val disclaimer: String,
     val license: String,
     val timestamp: Long,
     val base: String,
-    val rates: Map<String, Double>
+    val rates: Map<String, BigDecimal>
 )
 // {
 //     disclaimer: "https://openexchangerates.org/terms/",
@@ -38,7 +39,11 @@ data class OpenExchangeLatestResult(
 // }
 class OpenExchangeApi(val apiKey: String) {
     private val client: OkHttpClient by lazy { OkHttpClient() }
-    private val moshi: Moshi by lazy { Moshi.Builder().addLast(KotlinJsonAdapterFactory()).build() }
+    private val moshi: Moshi by lazy {
+        Moshi.Builder()
+            .add(BigDecimalJsonAdapter)
+            .addLast(KotlinJsonAdapterFactory()).build()
+    }
 
     private fun url(path: String): HttpUrl = HttpUrl.Builder()
             .scheme("https")

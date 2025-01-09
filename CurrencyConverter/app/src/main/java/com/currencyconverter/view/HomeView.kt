@@ -27,7 +27,6 @@ class HomeView: AppCompatActivity() {
     private val cacheRepo by lazy { CurrencyConverterCache(File(cacheDir, "currencyConverter")) }
     private val viewModel: HomeViewModel by viewModels { HomeViewModel.Factory(api, cacheRepo) };
     private val handler: Handler = Handler(Looper.myLooper()!!);
-    private val fetchFrequency: Long = 5000;
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,10 +36,28 @@ class HomeView: AppCompatActivity() {
         binding.spinnerFrom.adapter = adapter;
         binding.spinnerTo.adapter = adapter;
         binding.themeButton.setOnClickListener {
+            unbindObserver()
             if (resources.getString(R.string.mode) == "light") {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES);
             } else {
                 AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+            }
+            bindObserver();
+        }
+        binding.spinnerFrom.isFocusableInTouchMode = true;
+        binding.spinnerFrom.onFocusChangeListener = OnFocusChangeListener { _, hasFocus ->
+            if (hasFocus) {
+                if (binding.spinnerFrom.windowToken != null) {
+                    binding.spinnerFrom.performClick()
+                }
+            }
+        }
+        binding.spinnerTo.isFocusableInTouchMode = true;
+        binding.spinnerTo.onFocusChangeListener = OnFocusChangeListener { view, hasFocus ->
+            if (hasFocus) {
+                if (binding.spinnerTo.windowToken != null) {
+                    binding.spinnerTo.performClick()
+                }
             }
         }
         binding.lifecycleOwner = this;
@@ -83,23 +100,18 @@ class HomeView: AppCompatActivity() {
         }
     }
 
+    private fun unbindObserver() {
+        Log.i(TAG, "Unbind observers");
+        viewModel.toText.removeObservers(this);
+        viewModel.fromText.removeObservers(this);
+        viewModel.fromCurrency.removeObservers(this);
+        viewModel.toCurrency.removeObservers(this);
+        viewModel.error.removeObservers(this);
+        viewModel.isLoading.removeObservers(this);
+    }
+
     private fun bindObserver() {
-        binding.spinnerFrom.isFocusableInTouchMode = true;
-        binding.spinnerFrom.onFocusChangeListener = OnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                if (binding.spinnerFrom.windowToken != null) {
-                    binding.spinnerFrom.performClick()
-                }
-            }
-        }
-        binding.spinnerTo.isFocusableInTouchMode = true;
-        binding.spinnerTo.onFocusChangeListener = OnFocusChangeListener { _, hasFocus ->
-            if (hasFocus) {
-                if (binding.spinnerTo.windowToken != null) {
-                    binding.spinnerTo.performClick()
-                }
-            }
-        }
+        Log.i(TAG, "Bind observers");
         viewModel.toText.observe(this) { text ->
             if (binding.textTo.hasFocus() || binding.spinnerTo.hasFocus()) {
                 viewModel.toUpdated(text);
