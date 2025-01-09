@@ -2,27 +2,33 @@
 using System.IO;
 using System;
 
-string filePath = "input.txt";
+if (args.Length != 1 || !File.Exists(args[0]) || File.GetAttributes(args[0]).HasFlag(FileAttributes.Directory)) {
+    Console.WriteLine("Usage: dotnet run <input_file>");
+    return 1;
+}
+string filePath = args[0];
 string[] lines = File.ReadAllLines(filePath);
+int lineNumberMaxLength = (int)(Math.Log10(lines.Length)) + 1;
 for (int i = 0; i < lines.Length; i++) {
-    if (findMissingNumber(lines[i], i+1, out long missingNumber, out int size)) {
-        Console.WriteLine($"{i+1} | N = {size} -> Missing number = {missingNumber}");
+    if (findMissingNumber(lines[i], i+1, out ulong missingNumber, out ulong size)) {
+        Console.WriteLine($"{(i+1).ToString().PadLeft(lineNumberMaxLength)} | N = {size} -> Missing number = {missingNumber}");
     }
 }
+return 0;
 
-bool findMissingNumber(in ReadOnlySpan<char> line, int lineNumber, out long missingNumber, out int size) {
-    missingNumber = -1;
+bool findMissingNumber(in ReadOnlySpan<char> line, int lineNumber, out ulong missingNumber, out ulong size) {
+    missingNumber = 0;
     size = 0;
 
     ReadOnlySpan<char> data = line;
     bool expectNumber = true;
     int col = trimSpaceStart(ref data);
-    long sum = 0;
+    ulong sum = 0;
 
     while (col < line.Length) {
         if (expectNumber) {
             if (Char.IsDigit(data[0])) {
-                int numberLength = getNumber(ref data, out long result);
+                int numberLength = getNumber(ref data, out ulong result);
                 if (result <= 0) {
                     reportError(line, lineNumber, col, "Expect a possitive number.");
                     return false;
@@ -52,10 +58,10 @@ bool findMissingNumber(in ReadOnlySpan<char> line, int lineNumber, out long miss
     return true;
 }
 
-int getNumber(ref ReadOnlySpan<char> data, out long result) {
+int getNumber(ref ReadOnlySpan<char> data, out ulong result) {
     int i = 0;
     while (i < data.Length && Char.IsDigit(data[i])) i++;
-    result = long.Parse(data.Slice(0, i));
+    result = ulong.Parse(data.Slice(0, i));
     data = data.Slice(i);
     return i;
 }
@@ -68,12 +74,13 @@ int trimSpaceStart(ref ReadOnlySpan<char> line) {
 }
 
 void reportError(in ReadOnlySpan<char> line, int lineNumber, int col, ReadOnlySpan<char> error) {
+    col += 1; // passed in as 0-based
     ConsoleColor originalColor = Console.ForegroundColor;
     Console.ForegroundColor = ConsoleColor.Red;
-    Console.WriteLine($"{lineNumber} | {filePath}:{lineNumber}:{col}: error: {error}");
-    int start = int.Max(col - 10, 0);
-    int length = int.Min(line.Length - col, 20);
-    Console.Error.WriteLine($"  | {line.Slice(start, length)}");
-    Console.Error.WriteLine($"  | {"^".PadLeft(col-start)}~~~~");
+    Console.WriteLine($"{lineNumber.ToString().PadLeft(lineNumberMaxLength)} | {filePath}:{lineNumber}:{col}: error: {error}");
+    int start = int.Max(col - 20, 0);
+    int length = int.Min(line.Length - start, 40);
+    Console.Error.WriteLine($"{" ".PadLeft(lineNumberMaxLength+1)}| {(start != 0 ? "...":"")}{line.Slice(start, length)}{(start+length < line.Length ? "...":"")}");
+    Console.Error.WriteLine($"{" ".PadLeft(lineNumberMaxLength+1)}| {(start != 0 ? "   ":"")}{"^".PadLeft(col-start)}~~~~");
     Console.ForegroundColor = originalColor;
 }
