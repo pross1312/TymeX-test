@@ -1,0 +1,8 @@
+Product List:
+Laptop: price .99, quantity 5
+Laptop: price 999.99, quantity 5
+
+Smartphone: price 499.99, quantity 10
+Smartwatch: 
+Tablet: price 299.99, quantity 0
+Smartwatch: price 199.99, quantity 3
