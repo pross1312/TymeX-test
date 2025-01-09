@@ -4,6 +4,8 @@
 Since the array contains only **distinct numbers from [1, n+1]** we know that the sum without any missing number is $\frac{(n + 1)(n + 2)}{2}$.
 
 We can calculate the **actual sum** then do a **substraction** to get the missing number.
+
+input.txt
 ```plaintext
 3, 7, 1, 2, 6, 4
    1, 2, 3,4,5,6, 7, 8, 10 11, 12, 13, 14, 15, 16
@@ -17,6 +19,8 @@ We can calculate the **actual sum** then do a **substraction** to get the missin
 3 2 1
 1 , 2 , 4
 ```
+
+output
 ```plaintext
  1 | N = 6 -> Missing number = 5
  2 | input.txt:2:27: error: Expect ','.

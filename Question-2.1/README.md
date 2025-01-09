@@ -1,6 +1,7 @@
-# Question 2.2: Array Manipulation and Missing number problem
+# Question 2.1: Product Inventory Management
 
 ## Demo
+input.txt
 ```plaintext
 Product List:
 Laptop: price .99, quantity 5
@@ -11,6 +12,8 @@ Smartwatch:
 Tablet: price 299.99, quantity 0
 Smartwatch: price 199.99, quantity 3
 ```
+
+output
 ```plaintext
 Product Name: Laptop, Price: 0.99, Quantity: 5
 Product Name: Laptop, Price: 999.99, Quantity: 5

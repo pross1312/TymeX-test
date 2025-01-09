@@ -1,2 +1,2 @@
 # TymeX Test
-Check out each folder for more instructions!!!.
+Check out each folder for more information.
